@@ -23,7 +23,8 @@ default_config = {
     'RQ_DEFAULT_HOST': 'localhost',
     'RQ_DEFAULT_PORT': 6379,
     'RQ_DEFAULT_PASSWORD': None,
-    'RQ_DEFAULT_DB': 0
+    'RQ_DEFAULT_DB': 0,
+    'RQ_DEFAULT_WORKER_CLS': Worker
 }
 
 
@@ -69,8 +70,9 @@ def get_worker(*queues):
     servers = [get_server_url(name) for name in queues]
     if not servers.count(servers[0]) == len(servers):
         raise Exception('A worker only accept one connection')
-    return FlaskRQWorker([get_queue(name) for name in queues],
-                         connection=get_connection(queues[0]))
+    worker_cls = config_value(queues[0], 'WORKER_CLS')
+    return worker_cls([get_queue(name) for name in queues],
+                      connection=get_connection(queues[0]))
 
 
 def job(func_or_queue=None):
@@ -109,4 +111,4 @@ class FlaskRQWorker(Worker):
 
     def perform_job(self, *args, **kwargs):
         with current_app.app_context():
-            super(FlaskRQWorker, self).perform_job(*args, **kwargs)
+            return super(FlaskRQWorker, self).perform_job(*args, **kwargs)
